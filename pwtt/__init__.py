@@ -448,12 +448,12 @@ def detect_damage(aoi, inference_start, war_start, pre_interval=12, post_interva
         ).updateMask(ee.Image.constant(0)).toFloat()
 
         def map_orbit_ttest(orbit):
-            s1 = make_orbit_s1(orbit)
+            s1 = make_group_collection(orbit)
             result = ttest(s1, inference_start, war_start, pre_interval, post_interval, ttest_type=ttest_type)
             return ee.Image(ee.Algorithms.If(result.bandNames().size().gt(0), result, empty_orbit))
 
         def map_orbit_ztest(orbit):
-            s1 = make_orbit_s1(orbit)
+            s1 = make_group_collection(orbit)
             result = ztest(s1, inference_start, war_start, pre_interval)
             return ee.Image(ee.Algorithms.If(result.bandNames().size().gt(0), result, empty_orbit))
 

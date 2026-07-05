@@ -1,3 +1,4 @@
+# ===== 上游原有规则（保留，尊重原仓库）=====
 data/
 code/*.ipynb
 website
@@ -11,3 +12,36 @@ code/process_country.py
 *.js
 *.log
 *.csv
+
+# ===== 虚拟环境与本地缓存（D 盘隔离，绝不入 git）=====
+.venv/
+.pip-cache/
+.tmp/
+.gee/
+
+# ===== 私人记忆笔记（用户选择不进 git）=====
+memory/
+
+# ===== Python 构建缓存 =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# ===== Jupyter =====
+.ipynb_checkpoints/
+
+# ===== IDE =====
+.vscode/
+.idea/
+Thumbs.db
+
+# PWTT detect_damage 默认导出目录
+PWTT_Export/
+
+# 运行产物（view_result.py 生成，可随时重跑）
+gaza_damage_T.png
+*_damage_T.png

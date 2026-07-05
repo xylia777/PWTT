@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>基于PWTT的基础设施损毁监测评估系统</title>
+    <style>
+        * {margin:0;padding:0;box-sizing: border-box;font-family: "Roboto","Microsoft YaHei",SimHei,sans-serif;}
+        body {display:flex;height:100vh;flex-direction:column;background:#f3f4f6;}
+        /* 顶部全局标题栏 专业政务风 */
+        .page-header {
+            width: 100%;
+            padding: 12px 28px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+            background:#ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .header-left {
+            display:flex;
+            align-items:center;
+            gap:14px;
+        }
+        /* Logo容器 可替换图片 */
+        .logo-box {
+            width:40px;
+            height:40px;
+            border-radius:10px;
+            background:#0F3476;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color:#fff;
+            font-weight:bold;
+            font-size:18px;
+        }
+        .header-text h1 {
+            font-size: 23px;
+            font-weight: 700;
+            color: #0F3476;
+            letter-spacing:0.5px;
+        }
+        .header-text p {
+            font-size:12px;
+            color:#64748b;
+            margin-top:3px;
+        }
+        .header-right {
+            display:flex;
+            gap:12px;
+            align-items:center;
+        }
+        /* 搜索框与重置按钮等高等尺寸 */
+        .search-wrap {
+            position: relative;
+            width: 190px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border:1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size:13px;
+            background:#fff;
+            height:38px;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #80bfff;
+            box-shadow: 0 0 0 2px rgba(128, 191, 255, 0.12);
+        }
+        .search-dropdown {
+            position: absolute;
+            top: 102%;
+            left: 0;
+            width: 100%;
+            background: #fff;
+            border:1px solid #cbd5e1;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.09);
+            z-index: 999;
+            display: none;
+        }
+        .search-dropdown-item {
+            padding:8px 12px;
+            cursor: pointer;
+            font-size:13px;
+        }
+        .search-dropdown-item:hover {
+            background: #f1f5f9;
+        }
+        /* 顶部全局按钮 */
+        .header-btn {
+            height:38px;
+            padding:0 16px;
+            border-radius:8px;
+            border:1px solid #cbd5e1;
+            background:#f8fafc;
+            font-size:13px;
+            cursor:pointer;
+            transition:all 0.15s ease;
+            white-space:nowrap;
+        }
+        .header-btn:hover {
+            background:#f1f5f9;
+        }
+        /* 主体左右分栏容器 */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        /* 左侧分组侧边栏 加深浅灰质感 */
+        .sidebar {
+            width: 350px;
+            background: #f8fafc;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #e2e8f0;
+        }
+        .sidebar-group {
+            margin-bottom:22px;
+        }
+        .sidebar-group-title {
+            font-size:15px;
+            font-weight:600;
+            color:#1e293b;
+            margin-bottom:12px;
+            display:flex;
+            align-items:center;
+            gap:8px;
+        }
+        .tip {
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .form-item {
+            margin-bottom: 14px;
+        }
+        /* 经纬度双行紧凑布局 */
+        .latlng-row {
+            display: flex;
+            gap: 12px;
+        }
+        .latlng-col {
+            flex: 1;
+        }
+        label {
+            display:block;
+            margin-bottom: 5px;
+            font-weight: 400;
+            color: #334155;
+            font-size:13px;
+        }
+        input {
+            width:100%;
+            padding: 8px 10px;
+            border:1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size:13px;
+            background: #fff;
+        }
+        input:focus {
+            outline: none;
+            border-color: #80bfff;
+            box-shadow: 0 0 0 2px rgba(128, 191, 255, 0.12);
+        }
+        /* 底部并排按钮容器 */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top:10px;
+        }
+        .btn-group button {
+            flex: 1;
+        }
+        /* 运行按钮：低饱和浅蓝主色 */
+        .btn-run {
+            padding:11px;
+            background:#80bfff;
+            color:#0F3476;
+            border:none;
+            border-radius: 8px;
+            cursor:pointer;
+            font-size:15px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 4px rgba(128, 191, 255, 0.2);
+            text-align: center;
+            white-space: nowrap;
+        }
+        .btn-run:hover {
+            background: #63a8f0;
+            box-shadow: 0 3px 6px rgba(128, 191, 255, 0.26);
+        }
+        .btn-run:active {
+            transform: translateY(2px) scale(0.98);
+            box-shadow: 0 1px 2px rgba(128, 191, 255, 0.14);
+        }
+        /* 下载按钮：低饱和浅绿辅助色 */
+        .btn-download {
+            padding:11px;
+            background:#96e0b8;
+            color:#0f5132;
+            border:none;
+            border-radius: 8px;
+            cursor:pointer;
+            font-size:15px;
+            font-weight: 400;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 4px rgba(150, 224, 184, 0.18);
+            text-align: center;
+            white-space: nowrap;
+        }
+        .btn-download:hover {
+            background:#7cd0a2;
+            box-shadow: 0 3px 6px rgba(150, 224, 184, 0.24);
+        }
+        .btn-download:active {
+            transform: translateY(2px) scale(0.98);
+            box-shadow: 0 1px 2px rgba(150, 224, 184, 0.12);
+        }
+        /* 右侧主内容区 */
+        .main-view {
+            flex: 1;
+            padding: 20px;
+            background: #f3f4f6;
+            overflow-y: auto;
+        }
+        /* 通用卡片样式 */
+        .card {
+            background:#ffffff;
+            padding:24px;
+            border-radius:10px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom:20px;
+        }
+        .main-view h3 {
+            font-size: 18px;
+            color: #1e293b;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        #result-img {
+            width:100%;
+            height:auto;
+            border:1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        /* 地图iframe容器 */
+        .map-iframe {
+            width:100%;
+            height:360px;
+            border-radius:8px;
+            border:1px solid #e2e8f0;
+        }
+        /* ========== 统计解读功能区 ========== */
+        .stat-wrap {
+            display:flex;
+            gap:20px;
+        }
+        /* 统计指标卡片 */
+        .stat-card {
+            flex: 0 0 320px;
+            background:#fff;
+            border-radius:10px;
+            padding:20px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.06);
+        }
+        .stat-card h4 {
+            font-size:16px;
+            color:#1e293b;
+            margin-bottom:16px;
+            font-weight:600;
+            display:flex;
+            align-items:center;
+            gap:8px;
+        }
+        .stat-row {
+            display:flex;
+            justify-content:space-between;
+            padding:10px 0;
+            border-bottom:1px solid #f1f5f9;
+        }
+        .stat-row:last-child {
+            border-bottom:none;
+        }
+        .stat-label {
+            color:#64748b;
+            font-size:14px;
+        }
+        .stat-value {
+            font-size:16px;
+            font-weight:600;
+            color:#0F3476;
+        }
+        /* 动态解读卡片 */
+        .explain-card {
+            flex:1;
+            background:#fff;
+            border-radius:10px;
+            padding:20px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.06);
+        }
+        .explain-card h4 {
+            font-size:16px;
+            color:#1e293b;
+            margin-bottom:16px;
+            font-weight:600;
+            display:flex;
+            align-items:center;
+            gap:8px;
+        }
+        .explain-text {
+            font-size:14px;
+            color:#334155;
+            line-height:1.7;
+        }
+        .explain-text p {
+            margin-bottom:10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部标题栏：Logo+深蓝加粗标题+等尺寸搜索/重置 -->
+    <div class="page-header">
+        <div class="header-left">
+            <div class="logo-box">PW</div>
+            <div class="header-text">
+                <h1>基于PWTT的基础设施损毁监测评估系统</h1>
+                <p>基于时序Sentinel-1 SAR影像，PWTT像素级损毁变化检测分析平台</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="search-wrap">
+                <input class="search-input" id="regionSearch" placeholder="快速选择预设区域 ▼" readonly>
+                <div class="search-dropdown" id="regionDropdown">
+                    <div class="search-dropdown-item" data-west="34.21" data-south="31.21" data-east="34.57" data-north="31.60" data-name="加沙地带（默认案例）">加沙地带（默认案例）</div>
+                    <div class="search-dropdown-item" data-west="37.80" data-south="49.00" data-east="39.20" data-north="50.00" data-name="乌克兰顿巴斯核心战区">乌克兰顿巴斯核心战区</div>
+                    <div class="search-dropdown-item" data-west="116.20" data-south="39.80" data-east="116.60" data-north="40.10" data-name="北京城区（国产GF3演示）">北京城区（国产GF3演示）</div>
+                    <div class="search-dropdown-item" data-west="120.10" data-south="30.20" data-east="120.30" data-north="30.40" data-name="杭州主城区">杭州主城区</div>
+                </div>
+            </div>
+            <button class="header-btn" onclick="resetAllParam()">重置参数</button>
+        </div>
+    </div>
+
+    <!-- 主体左右分栏 -->
+    <div class="main-container">
+        <!-- 左侧分组参数面板 -->
+        <div class="sidebar">
+            <!-- 分组1：研究区边界配置 -->
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">📌 研究区边界配置</div>
+                <p class="tip">顶部下拉快速加载预设区域，支持手动自定义四至经纬度范围</p>
+                <form id="param-form">
+                    <div class="form-item">
+                        <label>经纬度边界</label>
+                        <div class="latlng-row">
+                            <div class="latlng-col">
+                                <label style="font-size:12px;">西经度 west</label>
+                                <input name="west" id="west" value="34.21" step="0.01">
+                            </div>
+                            <div class="latlng-col">
+                                <label style="font-size:12px;">东经度 east</label>
+                                <input name="east" id="east" value="34.57" step="0.01">
+                            </div>
+                        </div>
+                        <div class="latlng-row" style="margin-top:10px;">
+                            <div class="latlng-col">
+                                <label style="font-size:12px;">南纬度 south</label>
+                                <input name="south" id="south" value="31.21" step="0.01">
+                            </div>
+                            <div class="latlng-col">
+                                <label style="font-size:12px;">北纬度 north</label>
+                                <input name="north" id="north" value="31.60" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+            </div>
+            <!-- 分组2：时序检测参数 -->
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">⏱ 时序检测参数</div>
+                <div class="form-item">
+                    <label>战争起始时间 war_start</label>
+                    <input name="war_start" id="war_start" value="2023-10-10" type="date">
+                </div>
+                <div class="form-item">
+                    <label>检测结束时间 inference_start</label>
+                    <input name="inference_start" id="inference_start" value="2024-07-01" type="date">
+                </div>
+                <div class="form-item">
+                    <label>战前基线时长(月) pre_interval</label>
+                    <input name="pre_interval" id="pre_interval" value="12" type="number">
+                </div>
+                <div class="form-item">
+                    <label>战后观测窗口(月) post_interval</label>
+                    <input name="post_interval" id="post_interval" value="1" type="number">
+                </div>
+                <div class="form-item">
+                    <label>损毁判定阈值 threshold</label>
+                    <input name="threshold" id="threshold" value="3.3" step="0.1">
+                </div>
+            </div>
+            <!-- 分组3：运算操作 -->
+            <div class="sidebar-group">
+                <div class="sidebar-group-title">⚙ 运算操作</div>
+                <div class="btn-group">
+                    <button type="submit" class="btn-run">运行检测</button>
+                    <button type="button" class="btn-download" onclick="window.open('/download')">下载结果</button>
+                </div>
+            </form>
+            </div>
+        </div>
+
+        <!-- 右侧主展示区：地图 → 热力图 → 统计解读 -->
+        <div class="main-view">
+            <!-- 1.交互式GEE底图卡片 -->
+            <div class="card">
+                <h3>🗺 研究区交互式底图</h3>
+                <!-- 此处替换为你后端生成的geemap地图iframe地址 -->
+                <iframe class="map-iframe" id="mapIframe" src="" frameborder="0" loading="lazy"></iframe>
+            </div>
+
+            <!-- 2.双图诊断热力图卡片 -->
+            <div class="card">
+                <h3>PWTT双图诊断结果（T统计量热力图 + 参考期观测数量质控图）</h3>
+                <div>
+                    <img id="result-img" src="/static/cache/result.png" alt="检测结果将在此展示">
+                </div>
+            </div>
+
+            <!-- 3.底部统计+动态解读功能区 -->
+            <div class="stat-wrap">
+                <!-- 左侧：实时统计指标卡片 -->
+                <div class="stat-card">
+                    <h4>📊 区域损毁统计指标</h4>
+                    <div class="stat-row">
+                        <span class="stat-label">有效观测像素总量</span>
+                        <span class="stat-value">--</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">损毁像素(T>3.3)数量</span>
+                        <span class="stat-value">--</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">区域损毁占比</span>
+                        <span class="stat-value">--</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">SAR时序影像数量</span>
+                        <span class="stat-value">--</span>
+                    </div>
+                </div>
+                <!-- 右侧：动态图文解读卡片（切换区域自动更换文字） -->
+                <div class="explain-card">
+                    <h4>📖 诊断图表含义解读</h4>
+                    <div class="explain-text" id="explainContent">
+                        <p><strong>【加沙地带案例说明】</strong><br>
+                        1. T_statistic热力图：基于冲突前后Sentinel-1后向散射差值PWTT检验，橙红、紫色像素代表建筑坍塌、损毁高置信区域；黄色为临界阈值3.3，灰色为稳定无变化地表。<br>
+                        2. n_pre质控图：代表单像素参与基线统计的影像帧数，数值越高时序样本越充足，检测结果可信度更高。<br>
+                        3. 判定规则：仅同时满足T>3.3、基线样本≥6帧的像素判定为损毁建筑，规避云层、单景噪声误判。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById("param-form");
+        const imgBox = document.getElementById("result-img");
+        const searchInput = document.getElementById("regionSearch");
+        const dropdown = document.getElementById("regionDropdown");
+        const dropItems = document.querySelectorAll(".search-dropdown-item");
+        const explainBox = document.getElementById("explainContent");
+        const mapIframe = document.getElementById("mapIframe");
+
+        // 分区域专属解读文案库
+        const regionExplainDict = {
+            "加沙地带（默认案例）": `
+                <p><strong>【加沙地带·冲突损毁分析】</strong><br>
+                1. T_statistic热力图：冲突前后Sentinel-1时序后向散射PWTT差值检验，橙红/紫色像素为建筑坍塌、完全损毁高置信区域；黄色T≈3.3为临界阈值，灰色无地表变化。<br>
+                2. n_pre质控图：单像素基线时序影像帧数，全域黄色代表时序数据完整，无缺片干扰检测。<br>
+                3. 判定逻辑：T>3.3且基线样本≥6帧判定为损毁，过滤云层、单景噪声造成的假变化。</p>
+            `,
+            "乌克兰顿巴斯核心战区": `
+                <p><strong>【乌克兰顿巴斯·战区基础设施损毁】</strong><br>
+                1. T_statistic热力图：战时工业、居民楼、道路基础设施时序散射变化，高值色块代表炮击、爆破造成的建筑损毁；<br>
+                2. n_pre质控图：东部多云区域部分像素样本偏少，低数值区域结果可信度下降；<br>
+                3. 适配战区大区域，导出时scale=150降采样避免GEE下载超限，宏观识别成片损毁区域。</p>
+            `,
+            "北京城区（国产GF3演示）": `
+                <p><strong>【北京城区·城市常态化变化监测】</strong><br>
+                1. T_statistic热力图：无战争场景，仅识别拆迁工地、新建建筑、屋顶改造区域；<br>
+                2. n_pre质控图：城市区域时序数据稳定，可结合国产GF-3光学影像交叉验证；<br>
+                3. 阈值T=3.3适配城市建筑低矮屋顶散射微弱变化，用于城市更新普查。</p>
+            `,
+            "杭州主城区": `
+                <p><strong>【杭州主城区·城市更新监测】</strong><br>
+                1. T_statistic热力图：识别城中村拆迁、商业楼宇新建、河道改造地表变化；<br>
+                2. n_pre质控图：江南多云季节部分月份影像缺失，低值区域需结合光学数据复核；<br>
+                3. 适用于国内城镇建筑常态化动态监测，无冲突损毁场景。</p>
+            `
+        };
+
+        // 顶部重置全部参数函数
+        function resetAllParam() {
+            document.getElementById("west").value = "34.21";
+            document.getElementById("south").value = "31.21";
+            document.getElementById("east").value = "34.57";
+            document.getElementById("north").value = "31.60";
+            document.getElementById("war_start").value = "2023-10-10";
+            document.getElementById("inference_start").value = "2024-07-01";
+            document.getElementById("pre_interval").value = "12";
+            document.getElementById("post_interval").value = "1";
+            document.getElementById("threshold").value = "3.3";
+            searchInput.value = "";
+            imgBox.src = "/static/cache/result.png";
+            // 重置统计数值
+            document.querySelectorAll(".stat-value").forEach(el=>el.innerText="--");
+            // 恢复默认加沙解读
+            explainBox.innerHTML = regionExplainDict["加沙地带（默认案例）"];
+            // 重置地图iframe（后端对接后替换对应地图地址）
+            mapIframe.src = "";
+        }
+
+        // 下拉框交互
+        searchInput.addEventListener("click", () => {
+            dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+        })
+        document.addEventListener("click", (e) => {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = "none";
+            }
+        })
+        // 点击预设回填经纬度 + 切换解读文字 + 清空旧图
+        dropItems.forEach(item => {
+            item.addEventListener("click", () => {
+                const w = item.dataset.west;
+                const s = item.dataset.south;
+                const e = item.dataset.east;
+                const n = item.dataset.north;
+                const regionName = item.dataset.name;
+                // 回填经纬度
+                document.getElementById("west").value = w;
+                document.getElementById("south").value = s;
+                document.getElementById("east").value = e;
+                document.getElementById("north").value = n;
+                searchInput.value = regionName;
+                dropdown.style.display = "none";
+                // 清空旧热力图
+                imgBox.src = "";
+                // 重置统计数值
+                document.querySelectorAll(".stat-value").forEach(el=>el.innerText="--");
+                // 动态切换解读文字
+                explainBox.innerHTML = regionExplainDict[regionName];
+                // 【后端对接】此处可动态修改iframe地图src，定位到当前区域
+                // mapIframe.src = `/map?west=${w}&south=${s}&east=${e}&north=${n}`;
+            })
+        })
+
+        // 提交检测，GEE超限弹窗提示，填充模拟统计
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            imgBox.src = "";
+            const formData = new FormData(form);
+            const res = await fetch("/run_pwtt", {method:"POST", body:formData});
+            const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            imgBox.src = `/static/cache/result.png`;
+            // 模拟统计数值（后端对接后替换为接口真实数据）
+            const statList = document.querySelectorAll(".stat-value");
+            statList[0].innerText = "128642";
+            statList[1].innerText = "18753";
+            statList[2].innerText = "14.58%";
+            statList[3].innerText = "14";
+        })
+
+        // 页面初始化加载默认加沙解读
+        window.onload = function(){
+            explainBox.innerHTML = regionExplainDict["加沙地带（默认案例）"];
+        }
+    </script>
+</body>
+</html>
