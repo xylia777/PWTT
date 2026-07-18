@@ -1,5 +1,6 @@
 # ===== 上游原有规则（保留，尊重原仓库）=====
-data/
+data/*
+!data/download_test_data.py
 code/*.ipynb
 website
 .DS_Store
@@ -18,6 +19,7 @@ code/process_country.py
 .pip-cache/
 .tmp/
 .gee/
+.env
 
 # ===== 私人记忆笔记（用户选择不进 git）=====
 memory/
@@ -45,3 +47,7 @@ PWTT_Export/
 # 运行产物（view_result.py 生成，可随时重跑）
 gaza_damage_T.png
 *_damage_T.png
+
+# 本地检测/分析输出产物（不入 git，可重跑生成）
+results/
+static/cache/damage_result.png
