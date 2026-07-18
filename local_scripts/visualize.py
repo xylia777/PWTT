@@ -91,6 +91,23 @@ class DamageVisualizer:
             output = os.path.join(PATHS.get('analysis', '.'), 'damage_heatmap.png')
         return self.plot_t_heatmap(t_stat, n_pre, output, threshold)
 
+    def read_tif_bounds(self, path: str):
+        """读 GeoTIFF 经纬度范围 → [west, south, east, north]"""
+        from rasterio.warp import transform_bounds
+        with rasterio.open(path) as src:
+            w, s, e, n = transform_bounds(src.crs, 'EPSG:4326', *src.bounds)
+        return [w, s, e, n]
+
+    def plot_damage_overlay(self, damage_path: str, output: str):
+        """损毁栅格叠加图：damage>0 像素红色、背景透明（RGBA PNG，供 imageOverlay 叠底图）"""
+        with rasterio.open(damage_path) as src:
+            dmg = src.read(1)
+        rgba = np.zeros((*dmg.shape, 4), dtype=np.uint8)
+        rgba[dmg > 0] = [255, 71, 87, 200]   # 红色 半透明
+        plt.imsave(output, rgba)
+        print(f"[OK] 损毁叠加图: {output} | 损毁像素 {int((dmg>0).sum())}")
+        return output
+
 
 def main():
     parser = argparse.ArgumentParser(description='模块④ 结果可视化（本地损毁热力图）')

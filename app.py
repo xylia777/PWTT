@@ -228,24 +228,96 @@ def run_pwtt_local():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/analyze_local', methods=["POST"])
-def analyze_local():
-    """本地量化分析"""
+# ====================== 本地离线 · 四模块独立接口（分步执行）======================
+
+def _local_dirs():
+    """本地模式统一目录（处理后 / 检测结果 / 分析）"""
+    return {
+        'pre_out': os.path.join(PATHS['processed'], 'pre'),
+        'post_out': os.path.join(PATHS['processed'], 'post'),
+        'damage_dir': PATHS['damage'],
+        'analysis_dir': PATHS['analysis'],
+    }
+
+
+@app.route('/local_preprocess', methods=["POST"])
+def local_preprocess():
+    """① 预处理：数据源适配 + Lee 滤波，输出标准化 SAR 时序"""
     if not LOCAL_AVAILABLE:
         return jsonify({"error": "本地模块未安装"})
-
     try:
         data = request.form
-        damage_path = data.get("damage_path", os.path.join(PROJECT_ROOT, "results", "damage", "pwtt_damage.tif"))
-        ground_truth_path = data.get("ground_truth_path")
-
-        # 调用分析器
-        analyzer = analyze.ResultAnalyzer()
-        results = analyzer.run_analysis(damage_path, ground_truth_path)
-
-        return jsonify({"results": results})
-
+        pre_dir = data.get("pre_dir", os.path.join(PROJECT_ROOT, "data", "input", "pre"))
+        post_dir = data.get("post_dir", os.path.join(PROJECT_ROOT, "data", "input", "post"))
+        d = _local_dirs()
+        pre = SARPreprocessor()
+        pre.process_batch(pre_dir, d['pre_out'])
+        pre.process_batch(post_dir, d['post_out'])
+        pre_total = len([f for f in os.listdir(d['pre_out']) if f.lower().endswith(('.tif', '.tiff'))])
+        post_total = len([f for f in os.listdir(d['post_out']) if f.lower().endswith(('.tif', '.tiff'))])
+        return jsonify({"ok": True, "pre_total": pre_total, "post_total": post_total,
+                        "msg": f"预处理完成（灾前 {pre_total} 景 / 灾后 {post_total} 景）"})
     except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/local_detect', methods=["POST"])
+def local_detect():
+    """② 损毁检测：PWTT T 检验，输出损毁栅格 + T 热力图预览"""
+    if not LOCAL_AVAILABLE:
+        return jsonify({"error": "本地模块未安装"})
+    try:
+        threshold = float(request.form.get("threshold", 3.3))
+        d = _local_dirs()
+        det = PWDetector()
+        damage = det.run_detection(d['pre_out'], d['post_out'], threshold)
+        viz = DamageVisualizer()
+        img_path = os.path.join(IMG_CACHE, "t_heatmap.png")
+        viz.plot_from_files(damage['t_statistic'], damage['n_pre'], output=img_path, threshold=threshold)
+        bounds = viz.read_tif_bounds(damage['t_statistic'])   # 从 tif 读真实经纬度范围
+        return jsonify({"ok": True, "img_url": "cache/t_heatmap.png", "bounds": bounds,
+                        "metadata": _read_local_metadata(damage['metadata'])})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/local_analyze', methods=["POST"])
+def local_analyze():
+    """③ 检测结果分析：精度 + 矢量 + Excel 台账"""
+    if not LOCAL_AVAILABLE:
+        return jsonify({"error": "本地模块未安装"})
+    try:
+        d = _local_dirs()
+        damage_path = os.path.join(d['damage_dir'], 'pwtt_damage.tif')
+        gt = request.form.get("ground_truth_path")
+        ana = ResultAnalyzer()
+        ana.run_analysis(damage_path, gt)
+        metrics_path = os.path.join(d['analysis_dir'], 'metrics.json')
+        metrics = _read_local_metadata(metrics_path) if os.path.exists(metrics_path) else {}
+        return jsonify({"ok": True, "metrics": metrics, "msg": "分析完成（指标 + 矢量 + Excel 台账）"})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/local_visualize', methods=["POST"])
+def local_visualize():
+    """④ 可视化：损毁热力图（前端用 imageOverlay 叠加底图）"""
+    if not LOCAL_AVAILABLE:
+        return jsonify({"error": "本地模块未安装"})
+    try:
+        d = _local_dirs()
+        damage_path = os.path.join(d['damage_dir'], 'pwtt_damage.tif')
+        t_stat = os.path.join(d['damage_dir'], 'pwtt_t_statistic.tif')
+        viz = DamageVisualizer()
+        img_path = os.path.join(IMG_CACHE, "damage_overlay.png")
+        viz.plot_damage_overlay(damage_path, img_path)          # 损毁栅格叠加图（红+透明）
+        bounds = viz.read_tif_bounds(t_stat)                    # 从 tif 读真实 bounds
+        return jsonify({"ok": True, "img_url": "cache/damage_overlay.png", "bounds": bounds})
+    except Exception as e:
+        import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
